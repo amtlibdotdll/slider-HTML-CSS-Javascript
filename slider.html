@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Slider</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #140b24;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Barlow', sans-serif;
+  }
+
+  .slider-viewport {
+    width: 620px;
+    height: 190px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 28px 72px rgba(0,0,0,0.65);
+    position: relative;
+    cursor: grab;
+  }
+
+  .slider-viewport:active {
+    cursor: grabbing;
+  }
+
+  .slider-track {
+    display: flex;
+    width: calc(620px * 3);
+    height: 100%;
+    transition: transform 0.55s cubic-bezier(0.86, 0, 0.07, 1);
+    will-change: transform;
+  }
+
+  .slide {
+    width: 620px;
+    height: 190px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide img.banner {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    pointer-events: none;
+  }
+
+  /* Dots — overlaid inside the banner, bottom center */
+  .dots {
+    position: absolute;
+    bottom: 18px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.22);
+    border: 1.5px solid rgba(255,255,255,0.45);
+    cursor: pointer;
+    pointer-events: all;
+    transition: background 0.25s, border-color 0.25s, transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .dot.active {
+    background: rgba(255,255,255,0.88);
+    border-color: white;
+  }
+
+  .dot:hover:not(.active) {
+    background: rgba(255,255,255,0.45);
+    transform: scale(1.2);
+  }
+</style>
+</head>
+<body>
+
+<div class="slider-viewport" id="viewport">
+  <div class="slider-track" id="track">
+
+    <div class="slide">
+      <img class="banner" src="Images\Property 1=Default.svg" alt="Slide 1"/>
+    </div>
+
+    <div class="slide">
+      <img class="banner" src="Images\Property 1=Variant2.png" alt="Slide 2"/>
+    </div>
+
+    <div class="slide">
+      <img class="banner" src="Images\Property 1=Variant3.png" alt="Slide 3"/>
+    </div>
+
+  </div>
+
+  <!-- Dots inside the banner -->
+  <div class="dots">
+    <div class="dot active" data-idx="0"></div>
+    <div class="dot" data-idx="1"></div>
+    <div class="dot" data-idx="2"></div>
+  </div>
+</div>
+
+<script>
+  let current = 0;
+  const TOTAL = 3;
+  const SLIDE_W = 620;
+  const track = document.getElementById('track');
+  const dotEls = document.querySelectorAll('.dot');
+  let timer;
+
+  function goTo(idx) {
+    current = ((idx % TOTAL) + TOTAL) % TOTAL;
+    track.style.transform = `translateX(-${current * SLIDE_W}px)`;
+    dotEls.forEach((d, i) => d.classList.toggle('active', i === current));
+    resetTimer();
+  }
+
+  dotEls.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.idx)));
+
+  function advance() { goTo(current + 1); }
+
+  function resetTimer() {
+    clearInterval(timer);
+    timer = setInterval(advance, 4000);
+  }
+
+  resetTimer();
+
+  // Drag / swipe
+  const vp = document.getElementById('viewport');
+  let dragStart = null, isDragging = false;
+
+  vp.addEventListener('mousedown', e => {
+    dragStart = e.clientX;
+    isDragging = true;
+    track.style.transition = 'none';
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const diff = dragStart - e.clientX;
+    track.style.transform = `translateX(-${current * SLIDE_W + diff}px)`;
+  });
+
+  window.addEventListener('mouseup', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    track.style.transition = 'transform 0.55s cubic-bezier(0.86, 0, 0.07, 1)';
+    const diff = dragStart - e.clientX;
+    if (Math.abs(diff) > 50) goTo(current + (diff > 0 ? 1 : -1));
+    else goTo(current);
+  });
+
+  vp.addEventListener('touchstart', e => { dragStart = e.touches[0].clientX; }, {passive:true});
+  vp.addEventListener('touchend', e => {
+    const diff = dragStart - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) goTo(current + (diff > 0 ? 1 : -1));
+  });
+</script>
+</body>
+</html>
